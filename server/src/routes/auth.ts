@@ -11,6 +11,7 @@ export const USERS: StoredUser[] = [
     passwordHash: bcrypt.hashSync('admin123', 10),
     displayName: 'Admin User',
     avatarInitials: 'AU',
+    role: 'admin',
   },
   {
     id: 'usr_02',
@@ -18,6 +19,7 @@ export const USERS: StoredUser[] = [
     passwordHash: bcrypt.hashSync('password', 10),
     displayName: 'Demo Account',
     avatarInitials: 'DA',
+    role: 'demo',
   },
 ];
 
@@ -43,9 +45,11 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const token = jwt.sign({ userId: user.id, username: user.username }, process.env.JWT_SECRET!, {
-    expiresIn: '24h',
-  });
+  const token = jwt.sign(
+    { userId: user.id, username: user.username, role: user.role },
+    process.env.JWT_SECRET!,
+    { expiresIn: '24h' },
+  );
 
   res.json({
     token,
@@ -54,6 +58,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       username: user.username,
       displayName: user.displayName,
       avatarInitials: user.avatarInitials,
+      role: user.role,
     },
   });
 });

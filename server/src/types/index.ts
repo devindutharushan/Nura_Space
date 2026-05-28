@@ -1,22 +1,26 @@
 import type { Request } from 'express';
 
+export type UserRole = 'admin' | 'demo';
+
 export interface StoredUser {
   id: string;
   username: string;
   passwordHash: string;
   displayName: string;
   avatarInitials: string;
+  role: UserRole;
 }
 
 export interface JwtPayload {
   userId: string;
   username: string;
+  role: UserRole;
   iat: number;
   exp: number;
 }
 
 export interface AuthenticatedRequest extends Request {
-  user?: { userId: string; username: string };
+  user?: { userId: string; username: string; role: UserRole };
 }
 
 export type MessageSeverity = 'info' | 'warning' | 'critical';

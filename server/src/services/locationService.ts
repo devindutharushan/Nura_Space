@@ -58,6 +58,58 @@ export function getNearestCity(lat: number, lon: number): NearbyCity {
   };
 }
 
+interface NominatimReverseResult {
+  lat: string;
+  lon: string;
+  address: {
+    suburb?: string;
+    town?: string;
+    village?: string;
+    city?: string;
+    municipality?: string;
+    county?: string;
+  };
+}
+
+const reverseGeocodeCache = new Map<string, { data: NearbyCity; expiresAt: number }>();
+
+export async function getReverseGeocode(lat: number, lon: number): Promise<NearbyCity> {
+  const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
+  const cached = reverseGeocodeCache.get(key);
+  if (cached && Date.now() < cached.expiresAt) return cached.data;
+
+  const res = await axios.get<NominatimReverseResult>(
+    'https://nominatim.openstreetmap.org/reverse',
+    {
+      params: { lat, lon, format: 'json' },
+      headers: { 'User-Agent': 'NuraSpace/1.0 (devindutharushan@gmail.com)' },
+      timeout: 5000,
+    },
+  );
+
+  const addr = res.data.address;
+  const name =
+    addr.suburb ??
+    addr.town ??
+    addr.village ??
+    addr.city ??
+    addr.municipality ??
+    addr.county ??
+    'Unknown';
+  const placeLat = parseFloat(res.data.lat);
+  const placeLon = parseFloat(res.data.lon);
+
+  const result: NearbyCity = {
+    name,
+    distanceKm: Math.round(haversineKm(lat, lon, placeLat, placeLon) * 10) / 10,
+    lat: placeLat,
+    lon: placeLon,
+  };
+
+  reverseGeocodeCache.set(key, { data: result, expiresAt: Date.now() + 10 * 60_000 });
+  return result;
+}
+
 const geocodeCache = new Map<string, { data: GeocodingResult[]; expiresAt: number }>();
 
 export async function searchLocations(query: string): Promise<GeocodingResult[]> {

@@ -1,12 +1,13 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppShell } from '../components/layout/AppShell';
+import { useAuth } from '../context/AuthContext';
 import { CitySearch } from '../components/weather/CitySearch';
 import { WeatherCard } from '../components/weather/WeatherCard';
 import { useWeather } from '../hooks/useWeather';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { pushMessage } from '../services/api';
-import type { MessageSeverity } from '../types';
+import { pushMessage, getCityHistory } from '../services/api';
+import type { MessageSeverity, CityMessage } from '../types';
 import {
   CloudOff,
   MapPin,
@@ -15,22 +16,24 @@ import {
   CheckCircle2,
   ChevronDown,
   RefreshCw,
+  Users,
+  History,
+  AlertCircle,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 
-const CITIES = [
-  'Melbourne',
-  'Sydney',
-  'Brisbane',
-  'Perth',
-  'Adelaide',
-  'Southbank',
-  'London',
-  'New York',
-  'Tokyo',
-  'Paris',
-  'Dubai',
-  'Singapore',
-];
+const SEVERITY_ICON = {
+  info: Info,
+  warning: AlertTriangle,
+  critical: AlertCircle,
+} as const;
+
+const SEVERITY_COLOR = {
+  info: 'text-sky-400',
+  warning: 'text-amber-400',
+  critical: 'text-red-400',
+} as const;
 
 const SEVERITY_OPTIONS: { value: MessageSeverity; label: string; color: string }[] = [
   { value: 'info', label: 'Info', color: 'text-sky-400' },
@@ -38,17 +41,93 @@ const SEVERITY_OPTIONS: { value: MessageSeverity; label: string; color: string }
   { value: 'critical', label: 'Critical', color: 'text-red-400' },
 ];
 
+const MESSAGE_TEMPLATES = [
+  { label: 'Severe weather', text: 'Severe weather warning in effect. Seek shelter immediately.' },
+  { label: 'Road closure', text: 'Major road closure reported. Expect significant delays.' },
+  { label: 'Emergency', text: 'Emergency services active in the area. Avoid the affected zone.' },
+  {
+    label: 'Service disruption',
+    text: 'Public transport services are disrupted. Check for updates.',
+  },
+];
+
+const MAX_MESSAGE = 500;
+
+function titleCase(s: string) {
+  return s.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatRelative(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 function AdminPanel({ currentCity }: { currentCity: string | null }) {
+  const { activeCities, subscribePresence, unsubscribePresence, lastBroadcast } = useWebSocket();
+
   const [open, setOpen] = useState(false);
-  const [city, setCity] = useState(currentCity ?? 'Melbourne');
+  const [city, setCity] = useState(currentCity ?? '');
   const [message, setMessage] = useState('');
   const [severity, setSeverity] = useState<MessageSeverity>('info');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ delivered: number; city: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cityHistory, setCityHistory] = useState<CityMessage[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function handleSend(e: FormEvent) {
-    e.preventDefault();
+  const cityKey = city.trim().toLowerCase();
+
+  useEffect(() => {
+    if (currentCity) setCity(currentCity);
+  }, [currentCity]);
+
+  // Subscribe to aggregate presence updates while panel is open
+  useEffect(() => {
+    if (!open) return;
+    subscribePresence();
+    return () => unsubscribePresence();
+  }, [open, subscribePresence, unsubscribePresence]);
+
+  // Sync history when another admin session broadcasts to the targeted city
+  useEffect(() => {
+    if (!lastBroadcast) return;
+    if (lastBroadcast.city.toLowerCase() !== cityKey) return;
+    setCityHistory((prev) => {
+      // Avoid duplicates if this admin sent it (already prepended in handleSend)
+      if (prev[0]?.timestamp === lastBroadcast.timestamp) return prev;
+      return [lastBroadcast, ...prev].slice(0, 10);
+    });
+  }, [lastBroadcast, cityKey]);
+
+  // Fetch broadcast history whenever the targeted city changes
+  useEffect(() => {
+    const key = city.trim();
+    if (!key || !open) {
+      setCityHistory([]);
+      return;
+    }
+    setHistoryLoading(true);
+    getCityHistory(key)
+      .then((res) => setCityHistory([...res.messages].reverse()))
+      .catch(() => setCityHistory([]))
+      .finally(() => setHistoryLoading(false));
+  }, [city, open]);
+
+  useEffect(() => {
+    if (result) {
+      resultTimer.current = setTimeout(() => setResult(null), 4000);
+      return () => {
+        if (resultTimer.current) clearTimeout(resultTimer.current);
+      };
+    }
+  }, [result]);
+
+  async function handleSend(e?: FormEvent) {
+    e?.preventDefault();
     if (!city.trim() || !message.trim()) return;
     setSending(true);
     setResult(null);
@@ -56,14 +135,29 @@ function AdminPanel({ currentCity }: { currentCity: string | null }) {
     try {
       const res = await pushMessage({ city: city.trim(), message: message.trim(), severity });
       setResult(res);
+      // Prepend to local history — no round-trip needed, we already have all the data
+      const sent: CityMessage = {
+        city: city.trim(),
+        message: message.trim(),
+        severity,
+        timestamp: res.timestamp, // use server timestamp so dedup against message:broadcast event works
+      };
+      setCityHistory((prev) => [sent, ...prev].slice(0, 10));
       setMessage('');
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          'Failed to send message',
+          'Failed to send',
       );
     } finally {
       setSending(false);
+    }
+  }
+
+  function handleMessageKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSend();
     }
   }
 
@@ -76,7 +170,7 @@ function AdminPanel({ currentCity }: { currentCity: string | null }) {
       >
         <div className="flex items-center gap-2.5">
           <Send size={14} className="text-text-muted" strokeWidth={1.75} />
-          <span className="text-sm font-semibold text-text-primary">Send Test Message</span>
+          <span className="text-sm font-semibold text-text-primary">Broadcast Alert</span>
           <span className="text-[10px] text-text-muted bg-bg-elevated border border-border-subtle rounded-full px-2 py-0.5">
             Admin
           </span>
@@ -101,41 +195,188 @@ function AdminPanel({ currentCity }: { currentCity: string | null }) {
               onSubmit={handleSend}
               className="px-5 pb-5 border-t border-border-subtle space-y-3 pt-4"
             >
+              {/* Live city list */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold text-text-muted uppercase tracking-widest">
-                  City
-                </label>
-                <select
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-text-primary outline-none focus:border-border-strong transition-colors"
-                >
-                  {CITIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-text-secondary">Target city</label>
+                  <span className="flex items-center gap-1 text-[10px] text-text-muted">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${activeCities.length > 0 ? 'bg-emerald-400' : 'bg-border-subtle'}`}
+                    />
+                    {activeCities.length === 0
+                      ? 'No cities online'
+                      : `${activeCities.length} ${activeCities.length === 1 ? 'city' : 'cities'} online`}
+                  </span>
+                </div>
+
+                {activeCities.length > 0 ? (
+                  <div className="rounded-lg border border-border-subtle overflow-hidden">
+                    {activeCities.map((entry) => {
+                      const selected = cityKey === entry.city;
+                      return (
+                        <button
+                          key={entry.city}
+                          type="button"
+                          onClick={() => setCity(titleCase(entry.city))}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors border-b border-border-subtle last:border-0 ${
+                            selected ? 'bg-accent-primary/10' : 'hover:bg-bg-elevated'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+                              selected ? 'bg-accent-primary' : 'bg-emerald-400'
+                            }`}
+                          />
+                          <span
+                            className={`flex-1 text-sm truncate ${
+                              selected ? 'text-accent-primary font-medium' : 'text-text-primary'
+                            }`}
+                          >
+                            {titleCase(entry.city)}
+                          </span>
+                          <span className="flex items-center gap-1 text-[10px] tabular-nums text-text-muted shrink-0">
+                            <Users size={9} strokeWidth={2} />
+                            {entry.count}
+                          </span>
+                          {entry.lastBroadcast && (
+                            <span className="text-[10px] text-text-muted shrink-0">
+                              {formatRelative(entry.lastBroadcast)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2.5 px-3 py-3 rounded-lg bg-bg-elevated border border-border-subtle border-dashed">
+                    <Users size={12} className="text-text-muted shrink-0" strokeWidth={1.75} />
+                    <p className="text-xs text-text-muted">
+                      No users connected yet. Type a city below to broadcast anyway.
+                    </p>
+                  </div>
+                )}
+
+                {/* Divider + manual input */}
+                <div className="flex items-center gap-2 pt-0.5">
+                  <div className="h-px flex-1 bg-border-subtle" />
+                  <span className="text-[10px] text-text-muted">or type</span>
+                  <div className="h-px flex-1 bg-border-subtle" />
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="e.g. Melbourne, Fitzroy, Sydney…"
+                    className="w-full bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-border-strong transition-colors"
+                  />
+                </div>
+
+                {/* Quick-fill subscribed city */}
+                {currentCity && currentCity.toLowerCase() !== city.toLowerCase() && (
+                  <button
+                    type="button"
+                    onClick={() => setCity(currentCity)}
+                    className="self-start flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    <MapPin size={9} strokeWidth={2} />
+                    Use my city: {currentCity}
+                  </button>
+                )}
               </div>
 
+              {/* Past broadcasts for selected city */}
+              {city.trim() && (
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <History size={11} className="text-text-muted" strokeWidth={1.75} />
+                    <label className="text-xs font-medium text-text-secondary">
+                      Past broadcasts
+                    </label>
+                  </div>
+                  {historyLoading ? (
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-bg-elevated border border-border-subtle">
+                      <Loader2 size={11} className="animate-spin text-text-muted" />
+                      <span className="text-xs text-text-muted">Loading…</span>
+                    </div>
+                  ) : cityHistory.length === 0 ? (
+                    <p className="text-[10px] text-text-muted px-0.5">
+                      No broadcasts sent to {titleCase(city.trim())} yet.
+                    </p>
+                  ) : (
+                    <div className="rounded-lg border border-border-subtle overflow-hidden max-h-40 overflow-y-auto">
+                      {cityHistory.map((msg, i) => {
+                        const SevIcon = SEVERITY_ICON[msg.severity ?? 'info'];
+                        return (
+                          <div
+                            key={i}
+                            className="flex gap-2.5 px-3 py-2 border-b border-border-subtle last:border-0 hover:bg-bg-elevated transition-colors"
+                          >
+                            <SevIcon
+                              size={11}
+                              className={`${SEVERITY_COLOR[msg.severity ?? 'info']} shrink-0 mt-0.5`}
+                              strokeWidth={2}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-text-primary leading-snug truncate">
+                                {msg.message}
+                              </p>
+                              <span className="text-[10px] text-text-muted">
+                                {formatRelative(msg.timestamp)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Message templates */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold text-text-muted uppercase tracking-widest">
-                  Message
-                </label>
-                <input
-                  type="text"
+                <label className="text-xs font-medium text-text-secondary">Templates</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {MESSAGE_TEMPLATES.map((t) => (
+                    <button
+                      key={t.label}
+                      type="button"
+                      onClick={() => setMessage(t.text)}
+                      className="text-[10px] px-2 py-1 rounded border border-border-subtle text-text-muted hover:text-text-secondary hover:border-border-muted transition-colors"
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Message field with char counter */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-text-secondary">Message</label>
+                  <span
+                    className={`text-[10px] tabular-nums ${
+                      message.length > MAX_MESSAGE * 0.9 ? 'text-amber-400' : 'text-text-muted'
+                    }`}
+                  >
+                    {message.length} / {MAX_MESSAGE}
+                  </span>
+                </div>
+                <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="e.g. Severe weather alert near Southbank"
-                  maxLength={500}
-                  className="bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-border-strong transition-colors"
+                  onKeyDown={handleMessageKeyDown}
+                  placeholder="Type an alert message…"
+                  maxLength={MAX_MESSAGE}
+                  rows={3}
+                  className="bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-border-strong transition-colors resize-none leading-relaxed"
                 />
+                <p className="text-[10px] text-text-muted">⌘ Enter to send</p>
               </div>
 
+              {/* Severity */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-semibold text-text-muted uppercase tracking-widest">
-                  Severity
-                </label>
+                <label className="text-xs font-medium text-text-secondary">Severity</label>
                 <div className="flex gap-2">
                   {SEVERITY_OPTIONS.map((s) => (
                     <button
@@ -176,8 +417,8 @@ function AdminPanel({ currentCity }: { currentCity: string | null }) {
                   >
                     <CheckCircle2 size={13} className="text-emerald-400" strokeWidth={2} />
                     <p className="text-xs text-emerald-400">
-                      Delivered to <span className="font-semibold">{result.delivered}</span> client
-                      {result.delivered !== 1 ? 's' : ''} in{' '}
+                      Delivered to <span className="font-semibold">{result.delivered}</span>{' '}
+                      {result.delivered === 1 ? 'client' : 'clients'} in{' '}
                       <span className="font-semibold">{result.city}</span>
                     </p>
                   </motion.div>
@@ -195,17 +436,11 @@ function AdminPanel({ currentCity }: { currentCity: string | null }) {
                   </>
                 ) : (
                   <>
-                    <Send size={13} strokeWidth={2} /> Send to {city}
+                    <Send size={13} strokeWidth={2} />
+                    {city.trim() ? `Broadcast to ${city.trim()}` : 'Broadcast'}
                   </>
                 )}
               </button>
-
-              <p className="text-[10px] text-text-muted leading-relaxed">
-                Or via curl:{' '}
-                <code className="font-mono text-text-secondary">
-                  POST /api/messages {'{'}"city","message","severity"{'}'}
-                </code>
-              </p>
             </form>
           </motion.div>
         )}
@@ -218,6 +453,7 @@ export function HomePage() {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = useWeather(selectedCity);
   const { subscribeToCity, currentCity } = useWebSocket();
+  const { user } = useAuth();
 
   function handleCitySelect(city: string) {
     setSelectedCity(city);
@@ -291,7 +527,7 @@ export function HomePage() {
                   exit={{ opacity: 0 }}
                   className="flex flex-col items-center justify-center py-24 gap-4"
                 >
-                  <div className="w-16 h-16 rounded-3xl bg-bg-surface border border-border-subtle flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-2xl bg-bg-surface border border-border-subtle flex items-center justify-center">
                     <MapPin size={28} className="text-text-muted" strokeWidth={1.25} />
                   </div>
                   <div className="text-center">
@@ -303,9 +539,11 @@ export function HomePage() {
             </AnimatePresence>
           </div>
 
-          <div>
-            <AdminPanel currentCity={currentCity} />
-          </div>
+          {user?.role === 'admin' && (
+            <div>
+              <AdminPanel currentCity={currentCity} />
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

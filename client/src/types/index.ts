@@ -3,6 +3,7 @@ export interface User {
   username: string;
   displayName: string;
   avatarInitials: string;
+  role: 'admin' | 'demo';
 }
 
 export interface LoginCredentials {
@@ -117,8 +118,19 @@ export interface Toast {
 
 export interface ToastContextValue {
   toasts: Toast[];
+  history: Toast[];
+  historyOpen: boolean;
+  unreadCount: number;
   addToast: (city: string, message: string, severity?: MessageSeverity) => void;
   dismissToast: (id: string) => void;
+  clearHistory: () => void;
+  setHistoryOpen: (open: boolean) => void;
+}
+
+export interface ActiveCityEntry {
+  city: string;
+  count: number;
+  lastBroadcast: string | null;
 }
 
 export interface WebSocketContextValue {
@@ -126,6 +138,10 @@ export interface WebSocketContextValue {
   subscribeToCity: (city: string) => void;
   unsubscribeFromCity: (city: string) => void;
   currentCity: string | null;
+  activeCities: ActiveCityEntry[];
+  subscribePresence: () => void;
+  unsubscribePresence: () => void;
+  lastBroadcast: CityMessage | null;
 }
 
 export interface WsServerMessage {
@@ -146,6 +162,7 @@ export interface PushMessageResult {
   delivered: number;
   city: string;
   severity: MessageSeverity;
+  timestamp: string;
 }
 
 export interface LocationResult {

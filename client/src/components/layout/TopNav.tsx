@@ -1,4 +1,4 @@
-import { LogOut } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToasts } from '../../hooks/useToasts';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 export function TopNav() {
   const { user, logout } = useAuth();
-  const { toasts } = useToasts();
+  const { unreadCount, setHistoryOpen } = useToasts();
   const { isConnected } = useWebSocket();
   const navigate = useNavigate();
 
@@ -37,11 +37,19 @@ export function TopNav() {
             </span>
           </div>
 
-          {toasts.length > 0 && (
-            <span className="text-[10px] text-text-muted font-medium tabular-nums">
-              {toasts.length} alert{toasts.length !== 1 ? 's' : ''}
-            </span>
-          )}
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="relative flex items-center justify-center w-8 h-8 rounded-lg hover:bg-bg-elevated transition-colors text-text-muted hover:text-text-secondary"
+            aria-label="Alert history"
+          >
+            <Bell size={15} strokeWidth={1.75} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-severity-critical text-white text-[9px] font-bold flex items-center justify-center leading-none tabular-nums">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
 
           <div className="w-7 h-7 rounded-lg bg-bg-elevated border border-border-subtle flex items-center justify-center shrink-0">
             <span className="text-[11px] font-semibold text-text-secondary leading-none">

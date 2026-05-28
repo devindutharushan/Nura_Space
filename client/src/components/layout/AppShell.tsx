@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { TopNav } from './TopNav';
 import { ToastContainer } from '../messages/ToastContainer';
+import { AlertHistoryDrawer } from '../messages/AlertHistoryDrawer';
 
 interface AppShellProps {
   children: ReactNode;
@@ -12,6 +13,7 @@ export function AppShell({ children }: AppShellProps) {
       <TopNav />
       <main className="pt-14">{children}</main>
       <ToastContainer />
+      <AlertHistoryDrawer />
     </div>
   );
 }

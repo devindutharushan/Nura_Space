@@ -47,9 +47,7 @@ export function LoginForm() {
           </span>
         </div>
         <h1 className="text-2xl font-semibold text-text-primary tracking-tight">Sign in</h1>
-        <p className="text-text-muted text-sm mt-1">
-          Real-time weather and city alert dashboard.
-        </p>
+        <p className="text-text-muted text-sm mt-1">Real-time weather and city alert dashboard.</p>
       </div>
 
       <div className="bg-bg-surface border border-border-muted rounded-xl p-6 shadow-card-lg">

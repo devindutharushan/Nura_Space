@@ -10,7 +10,7 @@ import {
 import { io, type Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { useToastContext } from './ToastContext';
-import type { WebSocketContextValue, CityMessage } from '../types';
+import type { WebSocketContextValue, CityMessage, ActiveCityEntry } from '../types';
 
 const WebSocketContext = createContext<WebSocketContextValue | null>(null);
 
@@ -25,6 +25,8 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   const [isConnected, setIsConnected] = useState(false);
   const [currentCity, setCurrentCity] = useState<string | null>(null);
+  const [activeCities, setActiveCities] = useState<ActiveCityEntry[]>([]);
+  const [lastBroadcast, setLastBroadcast] = useState<CityMessage | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -41,7 +43,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     socket.on('connect', () => {
       setIsConnected(true);
       if (currentCityRef.current) {
-        socket.emit('join-city', currentCityRef.current);
+        socket.emit('city:join', currentCityRef.current);
       }
     });
 
@@ -51,8 +53,16 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       console.warn('Socket connection error:', err.message);
     });
 
-    socket.on('city-message', (msg: CityMessage) => {
+    socket.on('city:message', (msg: CityMessage) => {
       addToast(msg.city, msg.message, msg.severity);
+    });
+
+    socket.on('presence:update', ({ cities }: { cities: ActiveCityEntry[] }) => {
+      setActiveCities(cities);
+    });
+
+    socket.on('message:broadcast', (msg: CityMessage) => {
+      setLastBroadcast(msg);
     });
 
     return () => {
@@ -64,18 +74,35 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const subscribeToCity = useCallback((city: string) => {
     currentCityRef.current = city;
     setCurrentCity(city);
-    socketRef.current?.emit('join-city', city);
+    socketRef.current?.emit('city:join', city);
   }, []);
 
   const unsubscribeFromCity = useCallback((city: string) => {
     currentCityRef.current = null;
     setCurrentCity(null);
-    socketRef.current?.emit('leave-city', city);
+    socketRef.current?.emit('city:leave', city);
+  }, []);
+
+  const subscribePresence = useCallback(() => {
+    socketRef.current?.emit('presence:subscribe');
+  }, []);
+
+  const unsubscribePresence = useCallback(() => {
+    socketRef.current?.emit('presence:unsubscribe');
   }, []);
 
   return (
     <WebSocketContext.Provider
-      value={{ isConnected, subscribeToCity, unsubscribeFromCity, currentCity }}
+      value={{
+        isConnected,
+        subscribeToCity,
+        unsubscribeFromCity,
+        currentCity,
+        activeCities,
+        subscribePresence,
+        unsubscribePresence,
+        lastBroadcast,
+      }}
     >
       {children}
     </WebSocketContext.Provider>

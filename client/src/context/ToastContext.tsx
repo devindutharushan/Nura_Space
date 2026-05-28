@@ -8,6 +8,9 @@ const MAX_TOASTS = 4;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [history, setHistory] = useState<Toast[]>([]);
+  const [historyOpen, setHistoryOpenState] = useState(false);
+  const [lastSeenCount, setLastSeenCount] = useState(0);
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   const dismissToast = useCallback((id: string) => {
@@ -36,14 +39,42 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         return next.length > MAX_TOASTS ? next.slice(next.length - MAX_TOASTS) : next;
       });
 
+      setHistory((prev) => [toast, ...prev]);
+
       const timer = setTimeout(() => dismissToast(id), TOAST_DURATION);
       timers.current.set(id, timer);
     },
     [dismissToast],
   );
 
+  const clearHistory = useCallback(() => {
+    setHistory([]);
+    setLastSeenCount(0);
+  }, []);
+
+  const setHistoryOpen = useCallback(
+    (open: boolean) => {
+      setHistoryOpenState(open);
+      if (open) setLastSeenCount((prev) => prev + history.length - prev);
+    },
+    [history.length],
+  );
+
+  const unreadCount = history.length - lastSeenCount;
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, dismissToast }}>
+    <ToastContext.Provider
+      value={{
+        toasts,
+        history,
+        historyOpen,
+        unreadCount,
+        addToast,
+        dismissToast,
+        clearHistory,
+        setHistoryOpen,
+      }}
+    >
       {children}
     </ToastContext.Provider>
   );

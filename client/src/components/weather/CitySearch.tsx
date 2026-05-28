@@ -175,9 +175,7 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
       <div ref={containerRef} className="relative w-full">
         <div
           className={`flex items-center gap-3 bg-bg-elevated border rounded-xl px-4 sm:px-5 h-12 sm:h-14 transition-colors duration-150 ${
-            isOpen
-              ? 'border-border-strong'
-              : 'border-border-subtle hover:border-border-muted'
+            isOpen ? 'border-border-strong' : 'border-border-subtle hover:border-border-muted'
           }`}
         >
           <MapPin size={16} className="text-text-muted shrink-0" strokeWidth={1.5} />
@@ -249,11 +247,7 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
                       {item.type === 'recent' ? (
                         <Clock size={12} className="text-text-muted shrink-0" strokeWidth={2} />
                       ) : (
-                        <MapPin
-                          size={12}
-                          className="text-text-muted shrink-0"
-                          strokeWidth={2}
-                        />
+                        <MapPin size={12} className="text-text-muted shrink-0" strokeWidth={2} />
                       )}
                       <span className="min-w-0 flex-1">
                         <span

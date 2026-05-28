@@ -46,4 +46,13 @@ export async function getNearbyCity(
   return res.data;
 }
 
+export async function getCityHistory(
+  city: string,
+): Promise<{ city: string; messages: import('../types').CityMessage[] }> {
+  const res = await api.get<{ city: string; messages: import('../types').CityMessage[] }>(
+    `/messages/${encodeURIComponent(city.toLowerCase().trim())}/history`,
+  );
+  return res.data;
+}
+
 export default api;
