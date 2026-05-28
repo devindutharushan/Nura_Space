@@ -1,0 +1,27 @@
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      JWT_SECRET: ${JWT_SECRET:-nura-dev-secret-change-in-production}
+      OWM_API_KEY: ${OWM_API_KEY}
+      CLIENT_ORIGIN: "http://localhost:5173"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      server:
+        condition: service_healthy
