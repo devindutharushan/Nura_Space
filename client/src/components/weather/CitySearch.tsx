@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 import { MapPin, Search, X, Loader2, Navigation, Clock } from 'lucide-react';
 import { searchLocations, getNearbyCity } from '../../services/api';
 import type { LocationResult } from '../../types';
@@ -50,6 +51,7 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   function handleSelect(city: string) {
     onCitySelect(city);
@@ -61,12 +63,18 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
     inputRef.current?.blur();
   }
 
+  // Debounce 300ms and abort any in-flight request on each new keystroke.
+  // Together this keeps upstream geocoder load proportional to *finished*
+  // queries, not every individual character typed, and guarantees that a
+  // slow response for an earlier prefix can't race a faster one for the
+  // current prefix and overwrite the dropdown with stale results.
   function handleQueryChange(val: string) {
     setQuery(val);
     setIsOpen(true);
     setHighlighted(0);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    abortRef.current?.abort();
 
     if (!val.trim()) {
       setResults([]);
@@ -76,17 +84,26 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
 
     setIsSearching(true);
     debounceRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
-        const data = await searchLocations(val.trim());
-        setResults(data);
-      } catch {
+        const data = await searchLocations(val.trim(), controller.signal);
+        if (!controller.signal.aborted) {
+          setResults(data);
+          setIsSearching(false);
+        }
+      } catch (err) {
+        if (axios.isCancel(err)) return;
         setResults([]);
-      } finally {
         setIsSearching(false);
       }
     }, 300);
   }
 
+  // Geolocation is intentionally low-precision (enableHighAccuracy: false) and
+  // the raw coordinates only ever leave the browser as a single reverse-
+  // geocode lookup — the resolved city name is what we store and broadcast,
+  // never the user's actual lat/lon.
   function handleUseLocation() {
     if (!navigator.geolocation) {
       setGeoState('error');
@@ -152,16 +169,17 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
     };
   }, []);
 
   const geoLabel =
     geoState === 'locating'
-      ? 'Getting location…'
+      ? 'Finding your location…'
       : geoState === 'denied'
-        ? 'Location permission denied'
+        ? 'Location permission needed'
         : geoState === 'error'
-          ? 'Could not detect location'
+          ? 'Couldn’t detect location'
           : 'Use my location';
 
   const showDropdown =
@@ -174,11 +192,13 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
     <div className="space-y-3">
       <div ref={containerRef} className="relative w-full">
         <div
-          className={`flex items-center gap-3 bg-bg-elevated border rounded-xl px-4 sm:px-5 h-12 sm:h-14 transition-colors duration-150 ${
-            isOpen ? 'border-border-strong' : 'border-border-subtle hover:border-border-muted'
+          className={`flex items-center gap-3 bg-bg-surface border rounded-2xl px-4 sm:px-5 h-12 sm:h-14 shadow-card transition-colors duration-150 ${
+            isOpen
+              ? 'border-accent-primary/40 ring-2 ring-accent-primary/15'
+              : 'border-border-subtle hover:border-border-muted'
           }`}
         >
-          <MapPin size={16} className="text-text-muted shrink-0" strokeWidth={1.5} />
+          <MapPin size={16} className="text-accent-primary shrink-0" strokeWidth={1.75} />
           <input
             ref={inputRef}
             type="text"
@@ -186,13 +206,13 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
             onChange={(e) => handleQueryChange(e.target.value)}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder={currentCity ? `Current: ${currentCity}` : 'Search for a city…'}
-            className="flex-1 bg-transparent outline-none text-text-primary text-sm placeholder:text-text-muted min-w-0"
+            placeholder={currentCity ? `Watching ${currentCity}` : 'Search for a city…'}
+            className="flex-1 bg-transparent outline-none text-text-primary text-sm placeholder:text-text-secondary min-w-0"
           />
           {isSearching && (
             <Loader2
               size={15}
-              className="text-text-muted shrink-0 animate-spin"
+              className="text-text-secondary shrink-0 animate-spin"
               strokeWidth={1.5}
             />
           )}
@@ -204,13 +224,14 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
                 setResults([]);
                 inputRef.current?.focus();
               }}
-              className="text-text-muted hover:text-text-secondary transition-colors shrink-0 p-0.5"
+              className="text-text-secondary hover:text-text-primary transition-colors shrink-0 p-0.5"
+              aria-label="Clear search"
             >
               <X size={15} />
             </button>
           )}
           {!isSearching && !query && (
-            <Search size={15} className="text-text-muted shrink-0" strokeWidth={1.5} />
+            <Search size={15} className="text-text-secondary shrink-0" strokeWidth={1.5} />
           )}
         </div>
 
@@ -221,11 +242,11 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-bg-surface border border-border-muted rounded-xl shadow-card-lg overflow-hidden"
+              className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-bg-surface border border-border-subtle rounded-2xl shadow-card-lg overflow-hidden"
             >
               <div className="py-1.5 max-h-64 overflow-y-auto">
                 {!showingSearchResults && recent.length > 0 && (
-                  <p className="px-4 sm:px-5 pt-2 pb-1 text-[10px] font-semibold text-text-muted uppercase tracking-widest">
+                  <p className="px-4 sm:px-5 pt-2 pb-1 text-[10px] font-semibold text-text-secondary uppercase tracking-widest">
                     Recent
                   </p>
                 )}
@@ -241,27 +262,33 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
                       onMouseDown={() => handleSelect(name)}
                       onMouseEnter={() => setHighlighted(i)}
                       className={`w-full text-left px-4 sm:px-5 py-2.5 sm:py-3 flex items-center gap-3 transition-colors duration-100 ${
-                        i === highlighted ? 'bg-bg-elevated' : ''
+                        i === highlighted ? 'bg-bg-soft' : ''
                       }`}
                     >
                       {item.type === 'recent' ? (
-                        <Clock size={12} className="text-text-muted shrink-0" strokeWidth={2} />
+                        <Clock size={13} className="text-text-secondary shrink-0" strokeWidth={2} />
                       ) : (
-                        <MapPin size={12} className="text-text-muted shrink-0" strokeWidth={2} />
+                        <MapPin
+                          size={13}
+                          className="text-text-secondary shrink-0"
+                          strokeWidth={2}
+                        />
                       )}
                       <span className="min-w-0 flex-1">
                         <span
-                          className={`text-sm block truncate ${isActive ? 'text-text-primary font-medium' : 'text-text-primary'}`}
+                          className={`text-sm block truncate ${isActive ? 'text-accent-primary font-medium' : 'text-text-primary'}`}
                         >
                           {name}
                         </span>
                         {sub && sub !== name && (
-                          <span className="text-[11px] text-text-muted block truncate">{sub}</span>
+                          <span className="text-[11px] text-text-secondary block truncate">
+                            {sub}
+                          </span>
                         )}
                       </span>
                       {isActive && (
-                        <span className="ml-auto text-[10px] text-text-muted font-medium shrink-0">
-                          active
+                        <span className="ml-auto text-[10px] text-accent-primary font-semibold uppercase tracking-wide shrink-0">
+                          watching
                         </span>
                       )}
                     </button>
@@ -269,9 +296,14 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
                 })}
 
                 {showingSearchResults && !isSearching && results.length === 0 && (
-                  <p className="px-4 sm:px-5 py-4 text-sm text-text-muted text-center">
-                    No cities found for &ldquo;{query}&rdquo;
-                  </p>
+                  <div className="px-4 sm:px-5 py-5 text-center">
+                    <p className="text-sm text-text-primary">
+                      No cities matched &ldquo;{query}&rdquo;
+                    </p>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Try a different spelling or a nearby city.
+                    </p>
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -284,16 +316,16 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
           type="button"
           onClick={handleUseLocation}
           disabled={geoState === 'locating'}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all duration-150 disabled:cursor-not-allowed ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all duration-150 disabled:cursor-not-allowed ${
             geoState === 'denied' || geoState === 'error'
-              ? 'text-red-400 border-red-500/25 bg-red-500/5'
-              : 'text-text-muted border-border-subtle bg-bg-elevated hover:border-border-muted hover:text-text-secondary'
+              ? 'text-severity-critical border-severity-critical/30 bg-severity-critical/5'
+              : 'text-text-secondary border-border-subtle bg-bg-surface hover:border-accent-primary/30 hover:text-accent-primary hover:bg-accent-soft'
           }`}
         >
           {geoState === 'locating' ? (
-            <Loader2 size={10} strokeWidth={2} className="animate-spin" />
+            <Loader2 size={11} strokeWidth={2} className="animate-spin" />
           ) : (
-            <Navigation size={10} strokeWidth={2} />
+            <Navigation size={11} strokeWidth={2} />
           )}
           {geoLabel}
         </button>

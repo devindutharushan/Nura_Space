@@ -4,6 +4,11 @@ import type { AuthContextValue, User, LoginCredentials, AuthResponse } from '../
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// The client never trusts the JWT — the server re-verifies every request.
+// This local decode exists only to skip a guaranteed-failed boot-time API
+// call when the stored token is obviously expired (e.g. user returned after
+// the 24h TTL elapsed). If decoding fails for any reason we treat the token
+// as invalid and drop it.
 function decodeToken(token: string): { exp: number } | null {
   try {
     return JSON.parse(atob(token.split('.')[1]));
@@ -23,17 +28,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Hydrate from localStorage on mount so a returning user doesn't have to
+  // re-authenticate inside the JWT's lifetime. Any failure — missing data,
+  // expired token, corrupted JSON — clears both keys together so we never
+  // end up with a half-restored session.
   useEffect(() => {
     const stored = localStorage.getItem('nura_token');
-    if (stored && isTokenValid(stored)) {
-      setToken(stored);
-      const userData = localStorage.getItem('nura_user');
-      if (userData) {
-        try {
-          setUser(JSON.parse(userData));
-        } catch {
-          localStorage.removeItem('nura_user');
-        }
+    const userData = localStorage.getItem('nura_user');
+    if (stored && isTokenValid(stored) && userData) {
+      try {
+        setUser(JSON.parse(userData));
+        setToken(stored);
+      } catch {
+        localStorage.removeItem('nura_token');
+        localStorage.removeItem('nura_user');
       }
     } else {
       localStorage.removeItem('nura_token');

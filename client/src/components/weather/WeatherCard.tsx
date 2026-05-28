@@ -36,63 +36,51 @@ const weatherIcons = {
   Tornado,
 } as const;
 
-const conditionTheme: Record<
-  WeatherIconName,
-  { gradient: string; strip: string; iconColor: string; bg: string }
-> = {
+const conditionTheme: Record<WeatherIconName, { strip: string; iconColor: string; bg: string }> = {
   Sun: {
-    gradient: 'from-amber-500/20 to-orange-500/5',
-    strip: 'from-amber-400 via-orange-400 to-amber-500',
-    iconColor: 'text-amber-400',
-    bg: 'bg-amber-500/10',
+    strip: 'from-amber-300 via-amber-400 to-orange-400',
+    iconColor: 'text-amber-500',
+    bg: 'bg-amber-50',
   },
   Cloud: {
-    gradient: 'from-slate-400/15 to-slate-600/5',
-    strip: 'from-slate-400 via-slate-300 to-slate-500',
-    iconColor: 'text-slate-300',
-    bg: 'bg-slate-400/10',
+    strip: 'from-slate-300 via-slate-400 to-slate-500',
+    iconColor: 'text-slate-500',
+    bg: 'bg-slate-50',
   },
   CloudRain: {
-    gradient: 'from-blue-500/20 to-blue-800/5',
     strip: 'from-blue-400 via-blue-500 to-indigo-500',
-    iconColor: 'text-blue-400',
-    bg: 'bg-blue-500/10',
+    iconColor: 'text-blue-500',
+    bg: 'bg-blue-50',
   },
   CloudSnow: {
-    gradient: 'from-cyan-300/20 to-blue-500/5',
     strip: 'from-cyan-300 via-blue-300 to-indigo-400',
-    iconColor: 'text-cyan-300',
-    bg: 'bg-cyan-400/10',
+    iconColor: 'text-cyan-500',
+    bg: 'bg-cyan-50',
   },
   CloudLightning: {
-    gradient: 'from-purple-600/20 to-indigo-800/5',
     strip: 'from-purple-400 via-violet-500 to-indigo-500',
-    iconColor: 'text-purple-400',
-    bg: 'bg-purple-500/10',
+    iconColor: 'text-violet-500',
+    bg: 'bg-violet-50',
   },
   CloudDrizzle: {
-    gradient: 'from-teal-400/20 to-blue-600/5',
     strip: 'from-teal-400 via-cyan-400 to-blue-500',
-    iconColor: 'text-teal-400',
-    bg: 'bg-teal-400/10',
+    iconColor: 'text-teal-500',
+    bg: 'bg-teal-50',
   },
   CloudFog: {
-    gradient: 'from-gray-400/15 to-gray-700/5',
-    strip: 'from-gray-400 via-gray-300 to-gray-500',
-    iconColor: 'text-gray-400',
-    bg: 'bg-gray-400/10',
+    strip: 'from-gray-300 via-gray-400 to-gray-500',
+    iconColor: 'text-gray-500',
+    bg: 'bg-gray-50',
   },
   Wind: {
-    gradient: 'from-cyan-400/20 to-blue-600/5',
     strip: 'from-cyan-400 via-sky-400 to-blue-500',
-    iconColor: 'text-cyan-400',
-    bg: 'bg-cyan-400/10',
+    iconColor: 'text-sky-600',
+    bg: 'bg-sky-50',
   },
   Tornado: {
-    gradient: 'from-slate-500/15 to-gray-800/5',
     strip: 'from-slate-400 via-gray-400 to-slate-600',
-    iconColor: 'text-slate-400',
-    bg: 'bg-slate-500/10',
+    iconColor: 'text-slate-600',
+    bg: 'bg-slate-50',
   },
 };
 
@@ -151,22 +139,28 @@ function AlertBanner({ alert }: { alert: WeatherAlert }) {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-3 bg-red-500/8 border border-red-500/25 rounded-2xl overflow-hidden"
+      className="mb-3 bg-severity-critical/5 border border-severity-critical/25 rounded-2xl overflow-hidden"
     >
       <button
         type="button"
         className="w-full px-5 py-3.5 flex items-start gap-3 text-left"
         onClick={() => setExpanded((v) => !v)}
       >
-        <AlertTriangle size={15} className="text-red-400 shrink-0 mt-0.5" strokeWidth={1.75} />
+        <AlertTriangle
+          size={16}
+          className="text-severity-critical shrink-0 mt-0.5"
+          strokeWidth={1.75}
+        />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-red-300 leading-tight">{alert.event}</p>
-          <p className="text-[11px] text-text-muted mt-0.5 truncate">{alert.senderName}</p>
+          <p className="text-sm font-semibold text-severity-critical leading-tight">
+            {alert.event}
+          </p>
+          <p className="text-[11px] text-text-secondary mt-0.5 truncate">{alert.senderName}</p>
         </div>
         <ChevronDown
           size={14}
           strokeWidth={2}
-          className={`text-text-muted shrink-0 mt-0.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+          className={`text-text-secondary shrink-0 mt-0.5 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
         />
       </button>
       <AnimatePresence>
@@ -178,8 +172,8 @@ function AlertBanner({ alert }: { alert: WeatherAlert }) {
             exit={{ height: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-4 border-t border-red-500/15">
-              <p className="text-xs text-text-muted leading-relaxed mt-3 whitespace-pre-line">
+            <div className="px-5 pb-4 border-t border-severity-critical/15">
+              <p className="text-xs text-text-secondary leading-relaxed mt-3 whitespace-pre-line">
                 {alert.description}
               </p>
               <p className="text-[10px] text-text-muted mt-2 font-mono">
@@ -195,11 +189,11 @@ function AlertBanner({ alert }: { alert: WeatherAlert }) {
 
 function SunriseSunsetRow({ sunrise, sunset }: { sunrise: number; sunset: number }) {
   return (
-    <div className="flex items-center justify-around py-3.5 mb-5 bg-bg-elevated rounded-2xl border border-border-subtle">
+    <div className="flex items-center justify-around py-3.5 mb-5 bg-bg-soft rounded-2xl border border-border-subtle">
       <div className="flex items-center gap-2.5">
-        <Sunrise size={18} className="text-amber-400 shrink-0" strokeWidth={1.5} />
+        <Sunrise size={18} className="text-amber-500 shrink-0" strokeWidth={1.5} />
         <div>
-          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-widest">
+          <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">
             Sunrise
           </p>
           <p className="text-sm font-semibold text-text-primary">{formatClockTime(sunrise)}</p>
@@ -207,9 +201,9 @@ function SunriseSunsetRow({ sunrise, sunset }: { sunrise: number; sunset: number
       </div>
       <div className="w-px h-8 bg-border-subtle" />
       <div className="flex items-center gap-2.5">
-        <Sunset size={18} className="text-orange-400 shrink-0" strokeWidth={1.5} />
+        <Sunset size={18} className="text-orange-500 shrink-0" strokeWidth={1.5} />
         <div>
-          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-widest">
+          <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest">
             Sunset
           </p>
           <p className="text-sm font-semibold text-text-primary">{formatClockTime(sunset)}</p>
@@ -222,8 +216,8 @@ function SunriseSunsetRow({ sunrise, sunset }: { sunrise: number; sunset: number
 function HourlyStrip({ hourly }: { hourly: HourlyForecast[] }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-widest mb-2.5">
-        Hourly · 24 h
+      <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest mb-2.5">
+        Next 24 hours
       </p>
       <div className="overflow-x-auto -mx-5 sm:-mx-8 px-5 sm:px-8">
         <div className="flex gap-0.5 min-w-max pb-1">
@@ -232,17 +226,17 @@ function HourlyStrip({ hourly }: { hourly: HourlyForecast[] }) {
             return (
               <div
                 key={h.dt}
-                className="flex flex-col items-center gap-1.5 min-w-[44px] px-1 py-2 rounded-xl hover:bg-bg-elevated transition-colors"
+                className="flex flex-col items-center gap-1.5 min-w-[48px] px-1 py-2 rounded-xl hover:bg-bg-soft transition-colors"
               >
-                <span className="text-[10px] text-text-muted font-medium tabular-nums">
+                <span className="text-[10px] text-text-secondary font-medium tabular-nums">
                   {formatHour(h.dt)}
                 </span>
-                <Icon size={13} className="text-text-secondary shrink-0" strokeWidth={1.5} />
+                <Icon size={14} className="text-text-secondary shrink-0" strokeWidth={1.5} />
                 <span className="text-xs font-semibold text-text-primary tabular-nums">
                   {h.temp}°
                 </span>
                 {h.pop > 0.05 ? (
-                  <span className="text-[9px] text-blue-400 font-medium tabular-nums">
+                  <span className="text-[9px] text-severity-info font-medium tabular-nums">
                     {Math.round(h.pop * 100)}%
                   </span>
                 ) : (
@@ -260,26 +254,26 @@ function HourlyStrip({ hourly }: { hourly: HourlyForecast[] }) {
 function DailyForecastList({ daily }: { daily: DailyForecast[] }) {
   return (
     <div>
-      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-widest mb-1 mt-5">
-        8-Day Forecast
+      <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest mb-1 mt-5">
+        Next 8 days
       </p>
       <div className="divide-y divide-border-subtle">
         {daily.map((d) => {
           const Icon = weatherIcons[d.lucideIconName as WeatherIconName] ?? Cloud;
           return (
             <div key={d.dt} className="flex items-center gap-3 py-2.5">
-              <span className="w-11 text-xs font-medium text-text-muted shrink-0">
+              <span className="w-11 text-xs font-medium text-text-secondary shrink-0">
                 {formatDay(d.dt)}
               </span>
-              <Icon size={13} className="text-text-secondary shrink-0" strokeWidth={1.5} />
-              <span className="flex-1 text-xs text-text-muted truncate">{d.condition}</span>
+              <Icon size={14} className="text-text-secondary shrink-0" strokeWidth={1.5} />
+              <span className="flex-1 text-xs text-text-secondary truncate">{d.condition}</span>
               {d.pop > 0.05 && (
-                <span className="text-[10px] text-blue-400 font-medium tabular-nums min-w-[28px] text-right">
+                <span className="text-[10px] text-severity-info font-medium tabular-nums min-w-[28px] text-right">
                   {Math.round(d.pop * 100)}%
                 </span>
               )}
               <div className="flex items-center gap-1 min-w-[54px] justify-end">
-                <span className="text-xs text-text-muted tabular-nums">{d.tempMin}°</span>
+                <span className="text-xs text-text-secondary tabular-nums">{d.tempMin}°</span>
                 <span className="text-[10px] text-border-muted">/</span>
                 <span className="text-xs font-semibold text-text-primary tabular-nums">
                   {d.tempMax}°
@@ -296,25 +290,26 @@ function DailyForecastList({ daily }: { daily: DailyForecast[] }) {
 function WeatherSkeleton() {
   return (
     <div className="bg-bg-surface border border-border-subtle rounded-2xl overflow-hidden shadow-card animate-pulse">
-      <div className="h-1 bg-bg-elevated" />
+      <div className="h-1 bg-bg-soft" />
       <div className="p-5 sm:p-8 space-y-5">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <div className="h-6 w-28 bg-bg-elevated rounded-lg" />
-            <div className="h-3.5 w-12 bg-bg-elevated rounded-lg" />
+            <div className="h-6 w-28 bg-bg-soft rounded-lg" />
+            <div className="h-3.5 w-12 bg-bg-soft rounded-lg" />
           </div>
-          <div className="w-14 h-14 bg-bg-elevated rounded-2xl" />
+          <div className="w-14 h-14 bg-bg-soft rounded-2xl" />
         </div>
-        <div className="h-20 w-36 bg-bg-elevated rounded-xl" />
-        <div className="h-4 w-44 bg-bg-elevated rounded-lg" />
+        <div className="h-20 w-36 bg-bg-soft rounded-xl" />
+        <div className="h-4 w-44 bg-bg-soft rounded-lg" />
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="bg-bg-elevated rounded-2xl h-[88px]" />
+            <div key={i} className="bg-bg-soft rounded-2xl h-[88px]" />
           ))}
         </div>
-        <div className="h-14 bg-bg-elevated rounded-2xl" />
-        <div className="h-20 bg-bg-elevated rounded-2xl" />
+        <div className="h-14 bg-bg-soft rounded-2xl" />
+        <div className="h-20 bg-bg-soft rounded-2xl" />
       </div>
+      <p className="sr-only">Loading weather…</p>
     </div>
   );
 }
@@ -322,6 +317,7 @@ function WeatherSkeleton() {
 interface WeatherCardProps {
   data: WeatherData;
   isLoading: boolean;
+  fromCache?: boolean;
 }
 
 const cardVariants = {
@@ -333,7 +329,7 @@ const cardVariants = {
   },
 };
 
-export function WeatherCard({ data, isLoading }: WeatherCardProps) {
+export function WeatherCard({ data, isLoading, fromCache = false }: WeatherCardProps) {
   if (isLoading) return <WeatherSkeleton />;
 
   const iconName = data.lucideIconName as WeatherIconName;
@@ -355,7 +351,7 @@ export function WeatherCard({ data, isLoading }: WeatherCardProps) {
               <h2 className="text-xl sm:text-2xl font-semibold text-text-primary tracking-tight truncate">
                 {data.city}
               </h2>
-              <span className="text-[11px] font-medium text-text-muted tracking-widest uppercase mt-0.5 block">
+              <span className="text-[11px] font-medium text-text-secondary tracking-widest uppercase mt-0.5 block">
                 {data.country}
               </span>
             </div>
@@ -380,7 +376,7 @@ export function WeatherCard({ data, isLoading }: WeatherCardProps) {
           </p>
 
           {data.overview && (
-            <p className="text-text-muted text-xs leading-relaxed mt-2 mb-6 italic">
+            <p className="text-text-secondary text-xs leading-relaxed mt-2 mb-6 italic">
               {twoSentences(data.overview)}
             </p>
           )}
@@ -408,23 +404,25 @@ export function WeatherCard({ data, isLoading }: WeatherCardProps) {
           {(data.windGust != null ||
             (data.rain != null && data.rain > 0) ||
             (data.snow != null && data.snow > 0)) && (
-            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-text-muted mb-5 -mt-2">
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-text-secondary mb-5 -mt-2">
               {data.windGust != null && (
                 <span>
                   Gusts up to{' '}
-                  <span className="font-semibold text-text-secondary">{data.windGust} km/h</span>
+                  <span className="font-semibold text-text-primary">{data.windGust} km/h</span>
                 </span>
               )}
               {data.rain != null && data.rain > 0 && (
                 <span>
                   Rain{' '}
-                  <span className="font-semibold text-blue-400">{data.rain.toFixed(1)} mm/h</span>
+                  <span className="font-semibold text-severity-info">
+                    {data.rain.toFixed(1)} mm/h
+                  </span>
                 </span>
               )}
               {data.snow != null && data.snow > 0 && (
                 <span>
                   Snow{' '}
-                  <span className="font-semibold text-cyan-300">{data.snow.toFixed(1)} mm/h</span>
+                  <span className="font-semibold text-sky-600">{data.snow.toFixed(1)} mm/h</span>
                 </span>
               )}
             </div>
@@ -440,9 +438,25 @@ export function WeatherCard({ data, isLoading }: WeatherCardProps) {
 
           {data.daily.length > 0 && <DailyForecastList daily={data.daily} />}
 
-          <div className="mt-5 pt-4 sm:pt-5 border-t border-border-subtle flex items-center justify-between">
-            <span className="text-[11px] text-text-muted">Updated {timeAgo(data.timestamp)}</span>
-            <span className="text-[11px] text-text-muted font-mono">
+          <div className="mt-5 pt-4 sm:pt-5 border-t border-border-subtle flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[11px] text-text-secondary">
+                Updated {timeAgo(data.timestamp)}
+              </span>
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide border ${
+                  fromCache
+                    ? 'bg-severity-warning/10 text-severity-warning border-severity-warning/25'
+                    : 'bg-accent-soft text-accent-primary border-accent-primary/20'
+                }`}
+                title={
+                  fromCache ? 'Served from server cache (60 s TTL)' : 'Fresh from OpenWeatherMap'
+                }
+              >
+                {fromCache ? 'Cached' : 'Live'}
+              </span>
+            </div>
+            <span className="text-[11px] text-text-secondary font-mono shrink-0">
               {data.lat.toFixed(2)}, {data.lon.toFixed(2)}
             </span>
           </div>

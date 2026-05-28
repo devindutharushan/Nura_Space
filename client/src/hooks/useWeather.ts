@@ -6,6 +6,7 @@ interface UseWeatherResult {
   data: WeatherData | null;
   isLoading: boolean;
   error: string | null;
+  fromCache: boolean;
   refetch: () => void;
 }
 
@@ -13,12 +14,16 @@ export function useWeather(city: string | null): UseWeatherResult {
   const [data, setData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fromCache, setFromCache] = useState(false);
   const [tick, setTick] = useState(0);
 
   const refetch = useCallback(() => {
     if (city) setTick((t) => t + 1);
   }, [city]);
 
+  // `cancelled` guards against a fast city switch where an older response
+  // arrives after a newer one has been issued — without it the stale payload
+  // would overwrite the fresh data and the UI would flicker back.
   useEffect(() => {
     if (!city) return;
 
@@ -31,6 +36,7 @@ export function useWeather(city: string | null): UseWeatherResult {
       .then((res) => {
         if (!cancelled) {
           setData(res.data);
+          setFromCache(res.headers['x-cache'] === 'HIT');
           setIsLoading(false);
         }
       })
@@ -48,5 +54,5 @@ export function useWeather(city: string | null): UseWeatherResult {
     };
   }, [city, tick]);
 
-  return { data, isLoading, error, refetch };
+  return { data, isLoading, error, fromCache, refetch };
 }

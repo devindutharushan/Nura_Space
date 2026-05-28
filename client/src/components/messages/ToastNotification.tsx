@@ -14,25 +14,29 @@ const severityConfig: Record<
     icon: typeof Info;
     iconClass: string;
     badge: string;
+    label: string;
   }
 > = {
   info: {
-    bar: 'from-sky-400 to-sky-500',
+    bar: 'from-severity-info to-blue-500',
     icon: Info,
-    iconClass: 'text-sky-400',
-    badge: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+    iconClass: 'text-severity-info',
+    badge: 'text-severity-info bg-severity-info/10 border-severity-info/25',
+    label: 'Info',
   },
   warning: {
-    bar: 'from-amber-500 to-orange-400',
+    bar: 'from-severity-warning to-amber-500',
     icon: AlertTriangle,
-    iconClass: 'text-amber-400',
-    badge: 'text-amber-400 bg-amber-500/10 border-amber-500/25',
+    iconClass: 'text-severity-warning',
+    badge: 'text-severity-warning bg-severity-warning/10 border-severity-warning/30',
+    label: 'Warning',
   },
   critical: {
-    bar: 'from-red-500 to-rose-500',
+    bar: 'from-severity-critical to-red-500',
     icon: AlertCircle,
-    iconClass: 'text-red-400',
-    badge: 'text-red-300 bg-red-500/10 border-red-500/25',
+    iconClass: 'text-severity-critical',
+    badge: 'text-severity-critical bg-severity-critical/10 border-severity-critical/30',
+    label: 'Critical',
   },
 };
 
@@ -71,41 +75,45 @@ export function ToastNotification({ toast, onDismiss }: ToastNotificationProps) 
       initial="initial"
       animate="animate"
       exit="exit"
-      className="relative w-80 bg-bg-elevated border border-border-muted rounded-2xl shadow-toast overflow-hidden"
+      className="relative w-80 bg-bg-surface border border-border-subtle rounded-2xl shadow-toast overflow-hidden"
+      role="status"
+      aria-live="polite"
     >
       {/* Severity countdown strip */}
       <motion.div
-        className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${sev.bar} origin-left`}
+        className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${sev.bar} origin-left`}
         initial={{ scaleX: 1 }}
         animate={{ scaleX: 0 }}
         transition={{ duration: toast.duration / 1000, ease: 'linear' }}
       />
 
       <div className="px-4 pt-5 pb-4">
-        {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-2 min-w-0">
             <div
               className={`flex items-center gap-1 border rounded-full px-2 py-0.5 shrink-0 ${sev.badge}`}
             >
-              <MapPin size={9} strokeWidth={2.5} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">{toast.city}</span>
+              <SevIcon size={10} className={sev.iconClass} strokeWidth={2.25} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">{sev.label}</span>
             </div>
-            <SevIcon size={12} className={`${sev.iconClass} shrink-0`} strokeWidth={2} />
+            <span className="flex items-center gap-1 text-[10px] text-text-secondary shrink-0">
+              <MapPin size={9} strokeWidth={2.5} />
+              {toast.city}
+            </span>
             <span className="text-[10px] text-text-muted shrink-0">
-              {formatTime(toast.timestamp)}
+              · {formatTime(toast.timestamp)}
             </span>
           </div>
           <button
             type="button"
             onClick={() => onDismiss(toast.id)}
-            className="text-text-muted hover:text-text-secondary transition-colors shrink-0"
+            className="text-text-secondary hover:text-text-primary transition-colors shrink-0 p-0.5 rounded hover:bg-bg-soft"
+            aria-label="Dismiss alert"
           >
             <X size={13} strokeWidth={2.5} />
           </button>
         </div>
 
-        {/* Message */}
         <p className="text-text-primary text-sm leading-relaxed">{toast.message}</p>
       </div>
     </motion.div>

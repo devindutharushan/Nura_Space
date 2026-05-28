@@ -10,9 +10,6 @@ jobs:
   server:
     name: Server — lint, type-check, test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server
 
     steps:
       - uses: actions/checkout@v4
@@ -22,23 +19,26 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: server/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --workspace=nura-space-server
+
+      - name: Lint
+        working-directory: server
+        run: npm run lint
 
       - name: Type check
+        working-directory: server
         run: npx tsc --noEmit
 
       - name: Run tests
+        working-directory: server
         run: npm test
 
   client:
-    name: Client — type-check, build
+    name: Client — lint, type-check, build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
 
     steps:
       - uses: actions/checkout@v4
@@ -48,13 +48,19 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: client/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --workspace=nura-space-client
+
+      - name: Lint
+        working-directory: client
+        run: npm run lint
 
       - name: Type check
+        working-directory: client
         run: npx tsc --noEmit
 
       - name: Build
+        working-directory: client
         run: npm run build

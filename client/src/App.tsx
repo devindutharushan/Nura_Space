@@ -4,16 +4,21 @@ import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import type { ReactNode } from 'react';
 
+function FullPageSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-accent-primary/20 border-t-accent-primary rounded-full animate-spin" />
+        <p className="text-text-secondary text-sm">Getting things ready…</p>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-bg-base flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-accent-primary/30 border-t-accent-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <FullPageSpinner />;
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
@@ -21,13 +26,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 function PublicRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-bg-base flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-accent-primary/30 border-t-accent-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return <FullPageSpinner />;
 
   return isAuthenticated ? <Navigate to="/home" replace /> : <>{children}</>;
 }

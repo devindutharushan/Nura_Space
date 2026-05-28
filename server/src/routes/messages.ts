@@ -9,6 +9,11 @@ import type { AuthenticatedRequest, CityMessage } from '../types';
 
 const router = Router();
 
+// Zod parses + bounds-checks the body before it reaches the broadcast layer,
+// so anything that lands in `result.data` is already trimmed, length-limited,
+// and constrained to a known severity. The max lengths bound socket payload
+// size to keep a malformed-but-authenticated admin from fanning out huge
+// strings to every connected client.
 const PushMessageSchema = z.object({
   city: z.string().trim().min(1, 'city is required').max(100),
   message: z.string().trim().min(1, 'message is required').max(500),

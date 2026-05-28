@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Response } from 'express';
 import axios from 'axios';
 import { authenticate } from '../middleware/authenticate';
-import { getWeatherByCity } from '../services/weatherService';
+import { getCachedWeather, getWeatherByCity } from '../services/weatherService';
 import type { AuthenticatedRequest } from '../types';
 
 const router = Router();
@@ -16,9 +16,19 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res: Response): 
   }
 
   try {
+    // Snapshot the cache state *before* awaiting so X-Cache reflects whether
+    // the response was served from memory rather than re-fetched upstream.
+    const cacheHit = getCachedWeather(city) !== null;
     const data = await getWeatherByCity(city);
+    res.setHeader('X-Cache', cacheHit ? 'HIT' : 'MISS');
+    res.setHeader('Cache-Control', 'private, max-age=60');
     res.json(data);
   } catch (err) {
+    // Map upstream failures to a client-facing taxonomy:
+    //   401 from OWM = API plan not activated (config issue, not user error)
+    //   404           = unknown city
+    //   anything else = upstream is unreachable (502, never 500 — this server
+    //                   is healthy, it's the dependency that failed)
     if (axios.isAxiosError(err)) {
       if (err.response?.status === 401) {
         res.status(503).json({

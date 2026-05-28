@@ -1,8 +1,12 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
-import type { Toast, ToastContextValue } from '../types';
+import type { Toast, ToastContextValue, MessageSeverity } from '../types';
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+// On-screen toasts are capped; older ones drop off the bottom of the stack
+// when the cap is hit. The full sequence still lives in `history` so users
+// can review what they missed without us blocking the viewport with a wall
+// of overlapping notifications during a burst of broadcasts.
 const TOAST_DURATION = 6000;
 const MAX_TOASTS = 4;
 
@@ -23,14 +27,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToast = useCallback(
-    (city: string, message: string, severity: import('../types').MessageSeverity = 'info') => {
+    (city: string, message: string, severity: MessageSeverity = 'info', timestamp?: Date) => {
       const id = crypto.randomUUID();
+      // Prefer the server-supplied timestamp so reconnect-replay of recent
+      // history shows the original time the alert was sent, not the time the
+      // socket re-delivered it. Falls back to `now` for client-originated
+      // toasts that don't have a server timestamp.
       const toast: Toast = {
         id,
         city,
         message,
         severity,
-        timestamp: new Date(),
+        timestamp: timestamp ?? new Date(),
         duration: TOAST_DURATION,
       };
 
@@ -55,7 +63,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const setHistoryOpen = useCallback(
     (open: boolean) => {
       setHistoryOpenState(open);
-      if (open) setLastSeenCount((prev) => prev + history.length - prev);
+      if (open) setLastSeenCount(history.length);
     },
     [history.length],
   );

@@ -9,9 +9,9 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-bg-base">
+    <div className="min-h-screen">
       <TopNav />
-      <main className="pt-14">{children}</main>
+      <main className="pt-16">{children}</main>
       <ToastContainer />
       <AlertHistoryDrawer />
     </div>

@@ -15,21 +15,6 @@ interface OpenMeteoResponse {
   results?: OpenMeteoResult[];
 }
 
-export const SUPPORTED_CITIES: Array<{ name: string; lat: number; lon: number }> = [
-  { name: 'Melbourne', lat: -37.8136, lon: 144.9631 },
-  { name: 'Southbank', lat: -37.8236, lon: 144.9631 },
-  { name: 'Sydney', lat: -33.8688, lon: 151.2093 },
-  { name: 'Brisbane', lat: -27.4698, lon: 153.0251 },
-  { name: 'Perth', lat: -31.9523, lon: 115.8613 },
-  { name: 'Adelaide', lat: -34.9285, lon: 138.6007 },
-  { name: 'London', lat: 51.5074, lon: -0.1278 },
-  { name: 'New York', lat: 40.7128, lon: -74.006 },
-  { name: 'Tokyo', lat: 35.6762, lon: 139.6503 },
-  { name: 'Paris', lat: 48.8566, lon: 2.3522 },
-  { name: 'Dubai', lat: 25.2048, lon: 55.2708 },
-  { name: 'Singapore', lat: 1.3521, lon: 103.8198 },
-];
-
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -38,24 +23,6 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-export function getNearestCity(lat: number, lon: number): NearbyCity {
-  let nearest = SUPPORTED_CITIES[0];
-  let minDist = haversineKm(lat, lon, nearest.lat, nearest.lon);
-  for (const city of SUPPORTED_CITIES.slice(1)) {
-    const d = haversineKm(lat, lon, city.lat, city.lon);
-    if (d < minDist) {
-      minDist = d;
-      nearest = city;
-    }
-  }
-  return {
-    name: nearest.name,
-    distanceKm: Math.round(minDist * 10) / 10,
-    lat: nearest.lat,
-    lon: nearest.lon,
-  };
 }
 
 interface NominatimReverseResult {
@@ -71,8 +38,18 @@ interface NominatimReverseResult {
   };
 }
 
+// Reverse-geocode results are cached for 10 minutes keyed on coordinates
+// rounded to ~11m (4 decimal places). This both honours Nominatim's fair-use
+// policy (max 1 req/s) and avoids hammering them when several users in the
+// same building hit "Use my location" in succession.
 const reverseGeocodeCache = new Map<string, { data: NearbyCity; expiresAt: number }>();
 
+/**
+ * Resolve a city name from raw coordinates without ever storing the user's
+ * exact lat/lon — only the rounded cache key and the resolved place name
+ * leave this function. The User-Agent identifies the app per Nominatim's
+ * acceptable-use policy; using the default UA gets the IP banned.
+ */
 export async function getReverseGeocode(lat: number, lon: number): Promise<NearbyCity> {
   const key = `${lat.toFixed(4)},${lon.toFixed(4)}`;
   const cached = reverseGeocodeCache.get(key);
@@ -110,6 +87,9 @@ export async function getReverseGeocode(lat: number, lon: number): Promise<Nearb
   return result;
 }
 
+// Cache search results for 10 minutes. The frontend already debounces input
+// before reaching this endpoint, but multiple users typing the same prefix
+// (e.g. "mel") would otherwise produce duplicate upstream calls per keystroke.
 const geocodeCache = new Map<string, { data: GeocodingResult[]; expiresAt: number }>();
 
 export async function searchLocations(query: string): Promise<GeocodingResult[]> {
@@ -119,7 +99,10 @@ export async function searchLocations(query: string): Promise<GeocodingResult[]>
 
   const res = await axios.get<OpenMeteoResponse>('https://geocoding-api.open-meteo.com/v1/search', {
     params: { name: key, count: 6, language: 'en', format: 'json' },
-    timeout: 5000,
+    timeout: 8000,
+    // Force IPv4: Open-Meteo's AAAA record is blackholed from Azure Container Apps egress
+    // in australiaeast, causing 5s ETIMEDOUT before Happy Eyeballs falls back.
+    family: 4,
   });
 
   const raw = res.data.results ?? [];

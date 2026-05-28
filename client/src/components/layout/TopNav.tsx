@@ -16,55 +16,71 @@ export function TopNav() {
   }
 
   return (
-    <header className="bg-bg-base/95 backdrop-blur-sm border-b border-border-subtle fixed top-0 left-0 right-0 z-40 h-14">
+    <header className="bg-bg-surface/90 backdrop-blur-md border-b border-border-subtle fixed top-0 left-0 right-0 z-40 h-16">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-1.5 h-5 bg-accent-primary rounded-full" />
-          <span className="text-text-primary font-semibold text-[14px] tracking-tight hidden xs:block sm:block">
-            Nura Space
-          </span>
+          <div className="w-2 h-6 bg-accent-primary rounded-full" />
+          <div className="flex flex-col leading-tight">
+            <span className="text-text-primary font-semibold text-[15px] tracking-tight">
+              Nura Space
+            </span>
+            <span className="text-[10px] text-text-secondary hidden sm:block">Southbank Calm</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <div
-              className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors duration-500 ${
-                isConnected ? 'bg-status-connected' : 'bg-status-disconnected'
-              }`}
-            />
-            <span className="text-[11px] text-text-muted font-medium hidden sm:block">
-              {isConnected ? 'Live' : 'Offline'}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-colors ${
+              isConnected
+                ? 'bg-accent-soft border-accent-primary/20 text-accent-primary'
+                : 'bg-bg-soft border-border-subtle text-text-secondary'
+            }`}
+            title={isConnected ? 'Live connection active' : 'Reconnecting…'}
+          >
+            <span className="relative flex h-2 w-2 shrink-0">
+              {isConnected && (
+                <span className="absolute inline-flex h-full w-full rounded-full bg-accent-primary/40 opacity-75 animate-ping" />
+              )}
+              <span
+                className={`relative inline-flex h-2 w-2 rounded-full ${
+                  isConnected ? 'bg-accent-primary' : 'bg-text-muted'
+                }`}
+              />
+            </span>
+            <span className="text-[11px] font-medium hidden sm:block">
+              {isConnected ? 'Live connection active' : 'Offline'}
             </span>
           </div>
 
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="relative flex items-center justify-center w-8 h-8 rounded-lg hover:bg-bg-elevated transition-colors text-text-muted hover:text-text-secondary"
+            className="relative flex items-center justify-center w-9 h-9 rounded-xl hover:bg-bg-soft transition-colors text-text-secondary hover:text-text-primary"
             aria-label="Alert history"
           >
-            <Bell size={15} strokeWidth={1.75} />
+            <Bell size={16} strokeWidth={1.75} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-severity-critical text-white text-[9px] font-bold flex items-center justify-center leading-none tabular-nums">
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-severity-critical text-white text-[10px] font-bold flex items-center justify-center leading-none tabular-nums">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
 
-          <div className="w-7 h-7 rounded-lg bg-bg-elevated border border-border-subtle flex items-center justify-center shrink-0">
-            <span className="text-[11px] font-semibold text-text-secondary leading-none">
+          <div className="w-8 h-8 rounded-full bg-accent-soft border border-accent-primary/15 flex items-center justify-center shrink-0">
+            <span className="text-[11px] font-semibold text-accent-primary leading-none">
               {user?.avatarInitials ?? '?'}
             </span>
           </div>
 
-          <div className="w-px h-4 bg-border-subtle hidden sm:block" />
+          <div className="w-px h-5 bg-border-subtle hidden sm:block" />
 
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-1.5 text-text-muted hover:text-text-secondary transition-colors"
+            className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded-lg hover:bg-bg-soft"
+            title="Sign out"
           >
-            <LogOut size={14} strokeWidth={1.75} />
+            <LogOut size={15} strokeWidth={1.75} />
             <span className="text-xs font-medium hidden sm:block">Sign out</span>
           </button>
         </div>

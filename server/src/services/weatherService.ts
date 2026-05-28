@@ -8,6 +8,10 @@ import type {
   OWMOneCallResponse,
 } from '../types';
 
+// One-minute TTL is a deliberate tradeoff: OpenWeather charges per call and
+// alert payloads rarely change minute-to-minute, but anything longer would
+// risk admins broadcasting against stale conditions. Cache key is the
+// normalised city name so casing differences don't fragment the cache.
 const weatherCache = new Map<string, { data: WeatherData; cachedAt: number }>();
 const CACHE_TTL = 60_000;
 
@@ -77,6 +81,9 @@ function transformOneCall(
     summary: d.summary ?? '',
   }));
 
+  // Drop alerts whose end time has already passed — the upstream feed
+  // sometimes lags clearing expired warnings, and we'd otherwise rebroadcast
+  // them when a fresh socket joins the room.
   const alerts: WeatherAlert[] = (data.alerts ?? [])
     .filter((a) => a.end * 1000 > now)
     .map((a) => ({
@@ -132,6 +139,9 @@ export async function getWeatherByCity(city: string): Promise<WeatherData> {
 
   const { lat, lon, name, country } = await geocodeCity(city, apiKey);
 
+  // The narrative overview endpoint is a nice-to-have. Use Promise.allSettled
+  // so an overview outage or rate-limit doesn't take down the core weather
+  // card — only the primary One Call response is mandatory.
   const [oneCallRes, overviewRes] = await Promise.allSettled([
     axios.get<OWMOneCallResponse>('https://api.openweathermap.org/data/3.0/onecall', {
       params: { lat, lon, units: 'metric', appid: apiKey, exclude: 'minutely' },

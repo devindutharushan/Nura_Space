@@ -121,7 +121,7 @@ export interface ToastContextValue {
   history: Toast[];
   historyOpen: boolean;
   unreadCount: number;
-  addToast: (city: string, message: string, severity?: MessageSeverity) => void;
+  addToast: (city: string, message: string, severity?: MessageSeverity, timestamp?: Date) => void;
   dismissToast: (id: string) => void;
   clearHistory: () => void;
   setHistoryOpen: (open: boolean) => void;
@@ -138,6 +138,7 @@ export interface WebSocketContextValue {
   subscribeToCity: (city: string) => void;
   unsubscribeFromCity: (city: string) => void;
   currentCity: string | null;
+  currentCityCount: number;
   activeCities: ActiveCityEntry[];
   subscribePresence: () => void;
   unsubscribePresence: () => void;

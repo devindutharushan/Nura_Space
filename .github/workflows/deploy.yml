@@ -1,0 +1,60 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  # Change SUFFIX/RG/ACR if you used different names during bootstrap.
+  SUFFIX: ddt2026
+  RG: rg-nura-ddt2026
+  ACR: acrnuraddt2026
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push images
+        run: |
+          set -euo pipefail
+          az acr login -n "$ACR"
+          TAG="${GITHUB_SHA::7}"
+          docker build -f server/Dockerfile -t "$ACR.azurecr.io/nura-server:$TAG" .
+          docker build -f client/Dockerfile -t "$ACR.azurecr.io/nura-client:$TAG" .
+          docker push "$ACR.azurecr.io/nura-server:$TAG"
+          docker push "$ACR.azurecr.io/nura-client:$TAG"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Deploy Bicep
+        run: |
+          az deployment group create \
+            --resource-group "$RG" \
+            --template-file infra/main.bicep \
+            --parameters \
+              suffix="$SUFFIX" \
+              acrName="$ACR" \
+              serverImage="$ACR.azurecr.io/nura-server:$TAG" \
+              clientImage="$ACR.azurecr.io/nura-client:$TAG" \
+              jwtSecret='${{ secrets.JWT_SECRET }}' \
+              owmApiKey='${{ secrets.OWM_API_KEY }}'
+
+      - name: Output client URL
+        run: |
+          FQDN=$(az containerapp show -n nura-client -g "$RG" --query properties.configuration.ingress.fqdn -o tsv)
+          echo "Deployed: https://$FQDN"
+          echo "### Deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://$FQDN" >> "$GITHUB_STEP_SUMMARY"
