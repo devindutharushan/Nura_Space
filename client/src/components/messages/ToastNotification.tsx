@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { X, MapPin, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 import type { Toast, MessageSeverity } from '../../types';
+import { formatRelativeTime } from '../../utils/time';
 
 interface ToastNotificationProps {
   toast: Toast;
@@ -56,13 +57,6 @@ const toastVariants = {
   },
 };
 
-function formatTime(date: Date): string {
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 5) return 'just now';
-  if (diff < 60) return `${diff}s ago`;
-  return `${Math.floor(diff / 60)}m ago`;
-}
-
 export function ToastNotification({ toast, onDismiss }: ToastNotificationProps) {
   const sev = severityConfig[toast.severity ?? 'info'];
   const SevIcon = sev.icon;
@@ -96,12 +90,12 @@ export function ToastNotification({ toast, onDismiss }: ToastNotificationProps) 
               <SevIcon size={10} className={sev.iconClass} strokeWidth={2.25} />
               <span className="text-[10px] font-bold uppercase tracking-wider">{sev.label}</span>
             </div>
-            <span className="flex items-center gap-1 text-[10px] text-text-secondary shrink-0">
-              <MapPin size={9} strokeWidth={2.5} />
-              {toast.city}
+            <span className="flex items-center gap-1 min-w-0 text-[10px] text-text-secondary">
+              <MapPin size={9} strokeWidth={2.5} className="shrink-0" />
+              <span className="truncate">{toast.city}</span>
             </span>
             <span className="text-[10px] text-text-muted shrink-0">
-              · {formatTime(toast.timestamp)}
+              · {formatRelativeTime(toast.timestamp)}
             </span>
           </div>
           <button
@@ -114,7 +108,7 @@ export function ToastNotification({ toast, onDismiss }: ToastNotificationProps) 
           </button>
         </div>
 
-        <p className="text-text-primary text-sm leading-relaxed">{toast.message}</p>
+        <p className="text-text-primary text-sm leading-relaxed break-words">{toast.message}</p>
       </div>
     </motion.div>
   );

@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, MapPin, AlertCircle, AlertTriangle, Info, Bell } from 'lucide-react';
 import { useToasts } from '../../hooks/useToasts';
+import { formatRelativeTime } from '../../utils/time';
 import type { Toast, MessageSeverity } from '../../types';
 
 const severityConfig: Record<
@@ -20,14 +21,6 @@ const severityConfig: Record<
   },
 };
 
-function formatTime(date: Date): string {
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return date.toLocaleDateString();
-}
-
 function HistoryItem({ toast }: { toast: Toast }) {
   const sev = severityConfig[toast.severity ?? 'info'];
   const SevIcon = sev.icon;
@@ -37,13 +30,15 @@ function HistoryItem({ toast }: { toast: Toast }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 mb-1">
           <SevIcon size={12} className={`${sev.iconClass} shrink-0`} strokeWidth={2} />
-          <span className="flex items-center gap-1 text-[11px] text-text-secondary">
-            <MapPin size={10} strokeWidth={2.5} />
-            {toast.city}
+          <span className="flex items-center gap-1 min-w-0 text-[11px] text-text-secondary">
+            <MapPin size={10} strokeWidth={2.5} className="shrink-0" />
+            <span className="truncate">{toast.city}</span>
           </span>
-          <span className="text-[11px] text-text-muted ml-auto">{formatTime(toast.timestamp)}</span>
+          <span className="text-[11px] text-text-muted ml-auto shrink-0">
+            {formatRelativeTime(toast.timestamp)}
+          </span>
         </div>
-        <p className="text-sm text-text-primary leading-snug">{toast.message}</p>
+        <p className="text-sm text-text-primary leading-snug break-words">{toast.message}</p>
       </div>
     </div>
   );
