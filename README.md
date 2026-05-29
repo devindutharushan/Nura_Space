@@ -142,8 +142,8 @@ The app uses the **One Call API 3.0** endpoint, which lives under a separate sub
 
 ```bash
 # clone and install
-git clone <repo>
-cd nura-space
+git clone https://github.com/NonameASecret/Nura_Space.git
+cd Nura_Space
 npm install          # installs client + server via workspaces
 
 # configure
