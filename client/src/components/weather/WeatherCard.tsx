@@ -189,7 +189,7 @@ function AlertBanner({ alert }: { alert: WeatherAlert }) {
 
 function SunriseSunsetRow({ sunrise, sunset }: { sunrise: number; sunset: number }) {
   return (
-    <div className="flex items-center justify-around py-3.5 mb-5 bg-bg-soft rounded-2xl border border-border-subtle">
+    <div className="flex items-center justify-around py-3 sm:py-3.5 mb-4 sm:mb-5 bg-bg-soft rounded-2xl border border-border-subtle">
       <div className="flex items-center gap-2.5">
         <Sunrise size={18} className="text-amber-500 shrink-0" strokeWidth={1.5} />
         <div>
@@ -219,7 +219,7 @@ function HourlyStrip({ hourly }: { hourly: HourlyForecast[] }) {
       <p className="text-[10px] font-semibold text-text-secondary uppercase tracking-widest mb-2.5">
         Next 24 hours
       </p>
-      <div className="overflow-x-auto -mx-5 sm:-mx-8 px-5 sm:px-8">
+      <div className="overflow-x-auto -mx-4 sm:-mx-8 px-4 sm:px-8">
         <div className="flex gap-0.5 min-w-max pb-1">
           {hourly.map((h) => {
             const Icon = weatherIcons[h.lucideIconName as WeatherIconName] ?? Cloud;
@@ -291,7 +291,7 @@ function WeatherSkeleton() {
   return (
     <div className="bg-bg-surface border border-border-subtle rounded-2xl overflow-hidden shadow-card animate-pulse">
       <div className="h-1 bg-bg-soft" />
-      <div className="p-5 sm:p-8 space-y-5">
+      <div className="p-4 sm:p-8 space-y-5">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <div className="h-6 w-28 bg-bg-soft rounded-lg" />
@@ -345,10 +345,10 @@ export function WeatherCard({ data, isLoading, fromCache = false }: WeatherCardP
       <div className="bg-bg-surface border border-border-subtle rounded-2xl shadow-card overflow-hidden">
         <div className={`h-1 bg-gradient-to-r ${theme.strip}`} />
 
-        <div className="p-5 sm:p-8">
-          <div className="flex items-start justify-between gap-4 mb-5 sm:mb-6">
+        <div className="p-4 sm:p-8">
+          <div className="flex items-start justify-between gap-4 mb-3 sm:mb-6">
             <div className="min-w-0">
-              <h2 className="text-xl sm:text-2xl font-semibold text-text-primary tracking-tight truncate">
+              <h2 className="text-lg sm:text-2xl font-semibold text-text-primary tracking-tight truncate">
                 {data.city}
               </h2>
               <span className="text-[11px] font-medium text-text-secondary tracking-widest uppercase mt-0.5 block">
@@ -356,17 +356,17 @@ export function WeatherCard({ data, isLoading, fromCache = false }: WeatherCardP
               </span>
             </div>
             <div
-              className={`p-3 sm:p-3.5 ${theme.bg} border border-border-subtle rounded-2xl shrink-0`}
+              className={`p-2.5 sm:p-3.5 ${theme.bg} border border-border-subtle rounded-2xl shrink-0`}
             >
-              <Icon size={26} className={theme.iconColor} strokeWidth={1.5} />
+              <Icon size={22} className={`${theme.iconColor} sm:!w-[26px] sm:!h-[26px]`} strokeWidth={1.5} />
             </div>
           </div>
 
           <div className="flex items-start gap-1 mb-1">
-            <span className="text-[56px] sm:text-[72px] font-light text-text-primary leading-none tracking-tight">
+            <span className="text-[52px] sm:text-[72px] font-light text-text-primary leading-none tracking-tight">
               {data.temperature}
             </span>
-            <span className="text-xl sm:text-2xl font-light text-text-secondary mt-3 sm:mt-4">
+            <span className="text-xl sm:text-2xl font-light text-text-secondary mt-2.5 sm:mt-4">
               °C
             </span>
           </div>
@@ -376,13 +376,13 @@ export function WeatherCard({ data, isLoading, fromCache = false }: WeatherCardP
           </p>
 
           {data.overview && (
-            <p className="text-text-secondary text-xs leading-relaxed mt-2 mb-6 italic">
+            <p className="text-text-secondary text-xs leading-relaxed mt-1.5 mb-4 sm:mb-6 italic">
               {twoSentences(data.overview)}
             </p>
           )}
-          {!data.overview && <div className="mb-6" />}
+          {!data.overview && <div className="mb-3 sm:mb-6" />}
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-5">
             <WeatherMetric icon="Thermometer" label="Feels like" value={data.feelsLike} unit="°C" />
             <WeatherMetric icon="Droplets" label="Humidity" value={data.humidity} unit="%" />
             <WeatherMetric
@@ -404,7 +404,7 @@ export function WeatherCard({ data, isLoading, fromCache = false }: WeatherCardP
           {(data.windGust != null ||
             (data.rain != null && data.rain > 0) ||
             (data.snow != null && data.snow > 0)) && (
-            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-text-secondary mb-5 -mt-2">
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-text-secondary mb-3 sm:mb-5 -mt-1 sm:-mt-2">
               {data.windGust != null && (
                 <span>
                   Gusts up to{' '}
@@ -431,7 +431,7 @@ export function WeatherCard({ data, isLoading, fromCache = false }: WeatherCardP
           <SunriseSunsetRow sunrise={data.sunrise} sunset={data.sunset} />
 
           {data.hourly.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
               <HourlyStrip hourly={data.hourly} />
             </div>
           )}

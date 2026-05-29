@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { MapPin, Search, X, Loader2, Navigation, Clock } from 'lucide-react';
+import { MapPin, Search, X, Loader2, Navigation, Clock, Eye } from 'lucide-react';
 import { searchLocations, getNearbyCity } from '../../services/api';
 import type { LocationResult } from '../../types';
 
@@ -206,7 +206,8 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
             onChange={(e) => handleQueryChange(e.target.value)}
             onFocus={() => setIsOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder={currentCity ? `Watching ${currentCity}` : 'Search for a city…'}
+            placeholder="Search for a city…"
+            aria-label="Search for a city"
             className="flex-1 bg-transparent outline-none text-text-primary text-sm placeholder:text-text-secondary min-w-0"
           />
           {isSearching && (
@@ -311,7 +312,7 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
         </AnimatePresence>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           type="button"
           onClick={handleUseLocation}
@@ -329,6 +330,19 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
           )}
           {geoLabel}
         </button>
+
+        {currentCity && (
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-accent-primary/20 bg-accent-soft text-accent-primary text-xs font-medium max-w-full"
+            aria-label={`Currently watching ${currentCity}`}
+          >
+            <Eye size={11} strokeWidth={2} className="shrink-0" />
+            <span className="truncate">
+              <span className="text-text-secondary font-normal">Watching</span>{' '}
+              {currentCity}
+            </span>
+          </span>
+        )}
       </div>
     </div>
   );

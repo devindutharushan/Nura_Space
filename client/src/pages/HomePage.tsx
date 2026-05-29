@@ -26,16 +26,16 @@ export function HomePage() {
 
   return (
     <AppShell>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-5 sm:pt-10 pb-24 sm:pb-10">
+        <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-accent-primary uppercase tracking-widest mb-1">
+            <p className="text-[11px] sm:text-xs font-medium text-accent-primary uppercase tracking-widest mb-1">
               Southbank Calm
             </p>
-            <h1 className="text-2xl sm:text-[28px] font-semibold text-text-primary tracking-tight mb-1">
+            <h1 className="text-xl sm:text-[28px] font-semibold text-text-primary tracking-tight mb-0.5 sm:mb-1">
               Good to see you, {greetingName}.
             </h1>
-            <p className="text-text-secondary text-sm sm:text-[15px]">
+            <p className="text-text-secondary text-[13px] sm:text-[15px]">
               {currentCity
                 ? `Watching ${currentCity}. We'll let you know if anything changes.`
                 : 'Pick a city to see today’s weather and stay in the loop on live alerts.'}
@@ -47,19 +47,19 @@ export function HomePage() {
               onClick={() => setBroadcastOpen(true)}
               aria-expanded={broadcastOpen}
               aria-haspopup="dialog"
-              className="shrink-0 flex items-center gap-2.5 px-4 sm:px-5 h-11 rounded-xl bg-accent-primary text-white shadow-card hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
+              className="hidden sm:flex shrink-0 items-center gap-2.5 px-5 h-11 rounded-xl bg-accent-primary text-white shadow-card hover:bg-accent-hover active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
               title="Send an alert to everyone watching this city"
             >
               <Send size={15} strokeWidth={2.25} />
               <span>Send alert</span>
-              <span className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-white/20 hidden sm:inline">
+              <span className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-white/20">
                 ADMIN
               </span>
             </button>
           )}
         </div>
 
-        <div className="mb-8">
+        <div className="mb-5 sm:mb-8">
           <CitySearch onCitySelect={handleCitySelect} currentCity={currentCity} />
         </div>
 
@@ -135,7 +135,7 @@ export function HomePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-20 sm:py-24 gap-4 bg-bg-surface border border-border-subtle rounded-2xl shadow-card"
+              className="flex flex-col items-center justify-center py-12 sm:py-24 gap-4 bg-bg-surface border border-border-subtle rounded-2xl shadow-card"
             >
               <div className="w-14 h-14 rounded-2xl bg-accent-soft border border-accent-primary/15 flex items-center justify-center">
                 <MapPin size={24} className="text-accent-primary" strokeWidth={1.5} />
@@ -153,11 +153,25 @@ export function HomePage() {
       </div>
 
       {isAdmin && (
-        <BroadcastDrawer
-          open={broadcastOpen}
-          onClose={() => setBroadcastOpen(false)}
-          currentCity={currentCity}
-        />
+        <>
+          <button
+            type="button"
+            onClick={() => setBroadcastOpen(true)}
+            aria-expanded={broadcastOpen}
+            aria-haspopup="dialog"
+            aria-label="Send alert"
+            title="Send alert"
+            className="sm:hidden fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex items-center justify-center w-14 h-14 rounded-full bg-accent-primary text-white shadow-card-lg hover:bg-accent-hover active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
+          >
+            <Send size={18} strokeWidth={2.25} />
+            <span className="sr-only">Send alert (admin)</span>
+          </button>
+          <BroadcastDrawer
+            open={broadcastOpen}
+            onClose={() => setBroadcastOpen(false)}
+            currentCity={currentCity}
+          />
+        </>
       )}
     </AppShell>
   );

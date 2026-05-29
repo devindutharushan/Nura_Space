@@ -28,13 +28,15 @@ export function TopNav() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           <div
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-colors ${
+            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full border transition-colors ${
               isConnected
                 ? 'bg-accent-soft border-accent-primary/20 text-accent-primary'
                 : 'bg-bg-soft border-border-subtle text-text-secondary'
             }`}
+            role="status"
+            aria-label={isConnected ? 'Live connection active' : 'Reconnecting'}
             title={isConnected ? 'Live connection active' : 'Reconnecting…'}
           >
             <span className="relative flex h-2 w-2 shrink-0">
@@ -55,18 +57,29 @@ export function TopNav() {
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="relative flex items-center justify-center w-9 h-9 rounded-xl hover:bg-bg-soft transition-colors text-text-secondary hover:text-text-primary"
-            aria-label="Alert history"
+            className="relative flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl hover:bg-bg-soft transition-colors text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/30"
+            aria-label={
+              unreadCount > 0
+                ? `Alert history, ${unreadCount} unread`
+                : 'Alert history'
+            }
           >
             <Bell size={16} strokeWidth={1.75} />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-severity-critical text-white text-[10px] font-bold flex items-center justify-center leading-none tabular-nums">
+              <span
+                className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-severity-critical text-white text-[10px] font-bold flex items-center justify-center leading-none tabular-nums"
+                aria-hidden="true"
+              >
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
 
-          <div className="w-8 h-8 rounded-full bg-accent-soft border border-accent-primary/15 flex items-center justify-center shrink-0">
+          <div
+            className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-accent-soft border border-accent-primary/15 flex items-center justify-center shrink-0"
+            aria-label={user?.displayName ? `Signed in as ${user.displayName}` : undefined}
+            title={user?.displayName}
+          >
             <span className="text-[11px] font-semibold text-accent-primary leading-none">
               {user?.avatarInitials ?? '?'}
             </span>
@@ -77,7 +90,8 @@ export function TopNav() {
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors px-2 py-1 rounded-lg hover:bg-bg-soft"
+            className="flex items-center justify-center sm:justify-start gap-1.5 text-text-secondary hover:text-text-primary transition-colors w-10 h-10 sm:w-auto sm:h-auto sm:px-2 sm:py-1 rounded-lg hover:bg-bg-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/30"
+            aria-label="Sign out"
             title="Sign out"
           >
             <LogOut size={15} strokeWidth={1.75} />

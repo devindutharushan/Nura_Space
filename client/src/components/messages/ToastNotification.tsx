@@ -75,7 +75,7 @@ export function ToastNotification({ toast, onDismiss }: ToastNotificationProps) 
       initial="initial"
       animate="animate"
       exit="exit"
-      className="relative w-80 bg-bg-surface border border-border-subtle rounded-2xl shadow-toast overflow-hidden"
+      className="relative w-full sm:w-80 bg-bg-surface border border-border-subtle rounded-2xl shadow-toast overflow-hidden"
       role="status"
       aria-live="polite"
     >
