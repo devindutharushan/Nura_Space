@@ -20,9 +20,7 @@ export function ToastContainer() {
   const visible = isMobile ? toasts.slice(-1) : toasts;
 
   return (
-    <div
-      className="fixed top-[72px] left-3 right-3 sm:top-auto sm:bottom-6 sm:left-auto sm:right-6 sm:w-80 z-50 flex flex-col sm:flex-col-reverse gap-2.5 sm:gap-3 pointer-events-none"
-    >
+    <div className="fixed top-[72px] left-3 right-3 sm:top-auto sm:bottom-6 sm:left-auto sm:right-6 sm:w-80 z-50 flex flex-col sm:flex-col-reverse gap-2.5 sm:gap-3 pointer-events-none">
       <AnimatePresence mode="popLayout">
         {visible.map((toast) => (
           <div key={toast.id} className="pointer-events-auto w-full">

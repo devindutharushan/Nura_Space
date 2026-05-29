@@ -58,11 +58,7 @@ export function TopNav() {
             type="button"
             onClick={() => setHistoryOpen(true)}
             className="relative flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl hover:bg-bg-soft transition-colors text-text-secondary hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/30"
-            aria-label={
-              unreadCount > 0
-                ? `Alert history, ${unreadCount} unread`
-                : 'Alert history'
-            }
+            aria-label={unreadCount > 0 ? `Alert history, ${unreadCount} unread` : 'Alert history'}
           >
             <Bell size={16} strokeWidth={1.75} />
             {unreadCount > 0 && (

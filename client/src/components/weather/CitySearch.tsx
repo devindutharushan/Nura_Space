@@ -338,8 +338,7 @@ export function CitySearch({ onCitySelect, currentCity }: CitySearchProps) {
           >
             <Eye size={11} strokeWidth={2} className="shrink-0" />
             <span className="truncate">
-              <span className="text-text-secondary font-normal">Watching</span>{' '}
-              {currentCity}
+              <span className="text-text-secondary font-normal">Watching</span> {currentCity}
             </span>
           </span>
         )}

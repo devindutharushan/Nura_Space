@@ -358,7 +358,11 @@ export function WeatherCard({ data, isLoading, fromCache = false }: WeatherCardP
             <div
               className={`p-2.5 sm:p-3.5 ${theme.bg} border border-border-subtle rounded-2xl shrink-0`}
             >
-              <Icon size={22} className={`${theme.iconColor} sm:!w-[26px] sm:!h-[26px]`} strokeWidth={1.5} />
+              <Icon
+                size={22}
+                className={`${theme.iconColor} sm:!w-[26px] sm:!h-[26px]`}
+                strokeWidth={1.5}
+              />
             </div>
           </div>
 
