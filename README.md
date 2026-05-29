@@ -127,6 +127,17 @@ Then add these five **GitHub repo secrets**: `AZURE_CLIENT_ID` (= `$APP_ID`), `A
 
 ---
 
+## Getting an OpenWeatherMap API key
+
+The app uses the **One Call API 3.0** endpoint, which lives under a separate subscription from the legacy free tier.
+
+1. Create an account at [openweathermap.org/api](https://openweathermap.org/api).
+2. Subscribe to **One Call API 3.0** at [home.openweathermap.org/subscriptions](https://home.openweathermap.org/subscriptions). The base plan is free up to 1,000 calls/day (then 0.12 GBP per 100 calls), and a payment card is required — set the **Calls per day** cap to `1000` on the same page to guarantee no charges.
+3. Copy your key from [home.openweathermap.org/api_keys](https://home.openweathermap.org/api_keys). New keys are not active immediately — activation usually takes a few minutes but can take a couple of hours. Until then `GET /api/weather` will return a 401 from OpenWeatherMap.
+4. Use it as `OWM_API_KEY` in the steps below.
+
+---
+
 ## Running locally
 
 ```bash
